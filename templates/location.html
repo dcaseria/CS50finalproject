@@ -1,0 +1,81 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Location
+{% endblock %}
+
+{% block main %}
+
+        <script async src="https://maps.googleapis.com/maps/api/js?key={{ API_KEY }}&libraries=places&callback=initMap">
+        </script>
+
+        <script>
+            let autocomplete;
+            function initAutocomplete() {
+                autocomplete = new google.maps.places.Autocomplete(
+                    document.getElementById('autocomplete'),
+                    {
+
+                        fields: ['place_id', 'geometry', 'name']
+                    }
+                );
+
+                autocomplete.addListener('place_changed', onPlaceChanged);
+            }
+
+            function onPlaceChanged() {
+                var place = autocomplete.getPlace();
+
+                // if user fails to select a valid location from the dropdown menu, reset the field
+                if (!place.geometry) {
+
+                    document.getElementById('autocomplete').placeholder = 'Enter Starting Address';
+                }
+                else {
+                    document.getElementById('details').innerHTML = place.name;
+                }
+            }
+        </script>
+
+        <script async src="https://maps.googleapis.com/maps/api/js?key={{ API_KEY }}&libraries=places&callback=initAutocomplete" async defer>
+        </script>
+
+        <h1>Let's get started!</h1>
+        <p>Where are you starting from?</p>
+
+        <form action="/location" method="post">
+            <input autofocus class="searchbox" id="autocomplete" placeholder="Enter Starting Address" type="text" name="startpoint"/>
+            <div class="mb-5">
+                <button type="submit" class="btn btn-primary btn-lg px-4">Let's Go!</a>
+            </div>
+        </form>
+
+
+<!--
+        <hr class="col-3 col-md-2 mb-5">
+
+        <div class="row g-5">
+        <div class="col-md-6">
+            <h2>Starter projects</h2>
+            <p>Ready to beyond the starter template? Check out these open source projects that you can quickly duplicate to a new GitHub repository.</p>
+            <ul class="icon-list ps-0">
+            <li class="d-flex align-items-start mb-1"><a href="https://github.com/twbs/bootstrap-npm-starter" rel="noopener" target="_blank">Bootstrap npm starter</a></li>
+            <li class="text-muted d-flex align-items-start mb-1">Bootstrap Parcel starter (coming soon!)</li>
+            </ul>
+        </div>
+
+        <div class="col-md-6">
+            <h2>Guides</h2>
+            <p>Read more detailed instructions and documentation on using or contributing to Bootstrap.</p>
+            <ul class="icon-list ps-0">
+            <li class="d-flex align-items-start mb-1"><a href="/docs/5.2/getting-started/introduction/">Bootstrap quick start guide</a></li>
+            <li class="d-flex align-items-start mb-1"><a href="/docs/5.2/getting-started/webpack/">Bootstrap Webpack guide</a></li>
+            <li class="d-flex align-items-start mb-1"><a href="/docs/5.2/getting-started/parcel/">Bootstrap Parcel guide</a></li>
+            <li class="d-flex align-items-start mb-1"><a href="/docs/5.2/getting-started/vite/">Bootstrap Vite guide</a></li>
+            <li class="d-flex align-items-start mb-1"><a href="/docs/5.2/getting-started/contribute/">Contributing to Bootstrap</a></li>
+            </ul>
+        </div>
+        </div>
+
+      -->
+{% endblock %}
