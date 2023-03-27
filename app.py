@@ -151,7 +151,7 @@ def search():
 
         sortedresults = sorted(topresultslist, key=lambda d: d['rating'], reverse=True)
 
-        return render_template("results.html", destination=destination, distance=distance, startpoint=startpoint, response=topresultsdict, sortedresults=json.dumps(sortedresults), API_KEY=API_KEY)
+        return render_template("results.html", destination=destination, distance=distance, startpoint=startpoint, response=topresultsdict, sortedresults=sortedresults, API_KEY=API_KEY)
 
     else:
 
