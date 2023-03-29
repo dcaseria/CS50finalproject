@@ -1,28 +1,18 @@
-import os
-
 import googlemaps
-import pprint
 import requests
 import json
 import time
-
-from cs50 import SQL
-from flask import Flask, flash, redirect, render_template, request, session
+from requests.models import PreparedRequest
+from flask import Flask, redirect, render_template, request
 
 
 # Configure application
 app = Flask(__name__)
 
-# Configure CS50 Library to use SQLite database
-# b = SQL("sqlite:///finance.db")
-
 # Set API key
 API_KEY = 'AIzaSyCR-g9qwyqVaMLTlp6_vMuUzk9ESgTDe4I'
 
 gmaps = googlemaps.Client(key = API_KEY)
-
-startpoint = None
-destination = None
 
 @app.route("/")
 def index():
@@ -33,14 +23,11 @@ def index():
 def location():
 
     if request.method == "POST":
-
-        global startpoint
-        global start_lat
-        global start_lng
         
         # get google search results for user input startpoint
         startpoint = request.form.get("startpoint")
         
+        #URL to get info from Google Places API
         url = "https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=" + startpoint + "&inputtype=textquery&fields=place_id%2Cgeometry&key=" + API_KEY
 
         payload={}
@@ -50,11 +37,19 @@ def location():
         startjson = requests.request("GET", url, headers=headers, data=payload)
         startdict = json.loads(startjson.text)
 
-        # access the lattitude and longitude information contained in the dict and save to global variables
+        # access the lattitude and longitude information contained in the dict
         start_lat = startdict['candidates'][0]['geometry']['location']['lat']
         start_lng = startdict['candidates'][0]['geometry']['location']['lng']
 
-        return render_template("search.html", startpoint=startpoint, start_lat=start_lat, start_lng=start_lng, API_KEY=API_KEY)
+        #create URL to redirect to, containing startpoint, start_lat, and start_lng parameters
+        req = PreparedRequest()
+
+        url = "http://127.0.0.1:5000/search"
+        params = {'startpoint':startpoint, 'start_lat':start_lat, 'start_lng':start_lng}
+        req.prepare_url(url, params)
+
+        #req.url takes the url above, and adds each item in params as query parameters to the url
+        return redirect(req.url, code=301)
 
     else:
 
@@ -69,91 +64,132 @@ def search():
 
     if request.method == "POST":
 
+        #get input from user via html form
         destination = request.form.get("destination")
-        travelmode = request.form.get("mode")
-        distance = request.form.get("distance")
+
+        #convert miles to meters (which is what google api uses)
         distance_m = int(float(request.form.get("distance")) * 1609)
-        
-#        start_details = gmaps.places(start_id)
 
-#        test_id = start_details['results']
+        #hidden input fields with values generated from /location route
+        startpoint = request.form.get("startpoint")
+        start_lat = request.form.get("start_lat")
+        start_lng = request.form.get("start_lng")
 
-        #Get first 20 results matching user input
-        url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=" + str(start_lat) + "%2C" + str(start_lng) + "&radius=" + str(distance_m) + "&keyword=" + destination + "&maxResults=100&key=" + API_KEY
+        #create URL to redirect to, containing startpoint, start_lat, and start_lng, destination, and distance parameters
+        req = PreparedRequest()
 
-        payload = {}
-        headers = {}
+        url = "http://127.0.0.1:5000/results"
+        params = {'startpoint':startpoint, 'start_lat':start_lat, 'start_lng':start_lng, 'destination':destination, 'distance_m':distance_m}
+        req.prepare_url(url, params)
 
-        response = requests.request("GET", url, headers=headers, data=payload)
-        
-        #Create dictionary of results
-        responsedict = json.loads(response.text)
-
-        
-
-        topresultsdict = {}
-
-        count = 0
-
-        #Create new dictionary of only the important information
-        for i in range(len(responsedict['results'])):
-
-            if 'business_status' in responsedict['results'][i] and responsedict['results'][i]['business_status'] == 'OPERATIONAL':
-            
-                topresultsdict[count] = {}
-                
-                topresultsdict[count]['place_id'] = responsedict['results'][i]['place_id']
-                topresultsdict[count]['name'] = responsedict['results'][i]['name']
-                topresultsdict[count]['rating'] = responsedict['results'][i]['rating']
-                topresultsdict[count]['user_ratings_total'] = responsedict['results'][i]['user_ratings_total']
-                topresultsdict[count]['business_status'] = responsedict['results'][i]['business_status']
-
-                count += 1
-    
-        if 'next_page_token' in responsedict:
-        
-            #Use next_page_token to get results 21-40 and then 41-60.  Google maps documentation specifies a max of 60 results
-
-            next_page_token = responsedict['next_page_token']
-
-            for i in range(3):
-            
-                time.sleep(2)
-                
-                responsedict = gmaps.places_nearby(page_token = next_page_token)
-                #responsedict = json.loads(response)
-
-                for i in range(len(responsedict['results'])):
-                    
-                    if 'business_status' in responsedict['results'][i] and responsedict['results'][i]['business_status'] == 'OPERATIONAL':
-                    
-                        topresultsdict[count] = {}
-                        
-                        topresultsdict[count]['place_id'] = responsedict['results'][i]['place_id']
-                        topresultsdict[count]['name'] = responsedict['results'][i]['name']
-                        topresultsdict[count]['rating'] = responsedict['results'][i]['rating']
-                        topresultsdict[count]['user_ratings_total'] = responsedict['results'][i]['user_ratings_total']
-                        topresultsdict[count]['business_status'] = responsedict['results'][i]['business_status']
-
-                        count += 1
-                
-                if 'next_page_token' in responsedict:
-                    next_page_token = responsedict['next_page_token']
-                
-                else:
-                    break
-        
-        topresultslist = []
-
-        for place in topresultsdict:
-
-            topresultslist.append(topresultsdict[place])
-
-        sortedresults = sorted(topresultslist, key=lambda d: d['rating'], reverse=True)
-
-        return render_template("results.html", destination=destination, distance=distance, startpoint=startpoint, response=topresultsdict, sortedresults=sortedresults, API_KEY=API_KEY)
+        #req.url takes the url above, and adds each item in params as query parameters to the url
+        return redirect(req.url, code=301)
 
     else:
 
-        return render_template("search.html")
+        #get query parameters
+        args = request.args
 
+        #get query parameters from url
+        startpoint = args.get("startpoint")
+        start_lat = args.get("start_lat")
+        start_lng = args.get("start_lng")
+
+        return render_template("search.html", startpoint=startpoint, start_lat=start_lat, start_lng=start_lng)        
+
+
+@app.route("/results")
+def results():
+
+    #get query parameters
+    args = request.args
+
+    #get query parameters from url
+    startpoint = args.get("startpoint")
+    start_lat = args.get("start_lat")
+    start_lng = args.get("start_lng")
+    destination = args.get("destination")
+    distance = args.get("distance_m")
+
+    #Get first 20 results matching user input
+    url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=" + str(start_lat) + "%2C" + str(start_lng) + "&radius=" + str(distance) + "&keyword=" + destination + "&maxResults=100&key=" + API_KEY
+
+    payload = {}
+    headers = {}
+
+    response = requests.request("GET", url, headers=headers, data=payload)
+        
+    #Create dictionary of results
+    responsedict = json.loads(response.text)
+
+    topresultsdict = {}
+
+    count = 0
+
+    #Iterate through each result
+    for i in range(len(responsedict['results'])):
+#   for i in responsedict['results']:
+
+        #check to make sure business is listed as operational
+        if 'business_status' in responsedict['results'][i] and responsedict['results'][i]['business_status'] == 'OPERATIONAL':
+            
+            #create empty dictionary for the business
+            topresultsdict[count] = {}
+                
+            #copy over the keys/values we're interested in
+            topresultsdict[count]['place_id'] = responsedict['results'][i]['place_id']
+            topresultsdict[count]['name'] = responsedict['results'][i]['name']
+            topresultsdict[count]['rating'] = responsedict['results'][i]['rating']
+            topresultsdict[count]['user_ratings_total'] = responsedict['results'][i]['user_ratings_total']
+            topresultsdict[count]['business_status'] = responsedict['results'][i]['business_status']
+            topresultsdict[count]['lat'] = responsedict['results'][i]['geometry']['location']['lat']
+            topresultsdict[count]['lng'] = responsedict['results'][i]['geometry']['location']['lng']
+
+            #count only gets incremented if the business was operational and therefor copied into topresultsdict
+            count += 1
+    
+    #Use next_page_token to get results 21-40 and then 41-60.  Google maps documentation specifies a max of 60 results
+        
+    if 'next_page_token' in responsedict:
+        
+        next_page_token = responsedict['next_page_token']
+
+        for i in range(3):
+            
+            #pause to let the next_page_token register on google's end of things, before making the call for the next 20 results
+            time.sleep(2)
+                
+            responsedict = gmaps.places_nearby(page_token = next_page_token)
+#           #responsedict = json.loads(response)
+
+            for i in range(len(responsedict['results'])):
+                    
+                if 'business_status' in responsedict['results'][i] and responsedict['results'][i]['business_status'] == 'OPERATIONAL':
+                    
+                    topresultsdict[count] = {}
+                        
+                    topresultsdict[count]['place_id'] = responsedict['results'][i]['place_id']
+                    topresultsdict[count]['name'] = responsedict['results'][i]['name']
+                    topresultsdict[count]['rating'] = responsedict['results'][i]['rating']
+                    topresultsdict[count]['user_ratings_total'] = responsedict['results'][i]['user_ratings_total']
+                    topresultsdict[count]['business_status'] = responsedict['results'][i]['business_status']
+                    topresultsdict[count]['lat'] = responsedict['results'][i]['geometry']['location']['lat']
+                    topresultsdict[count]['lng'] = responsedict['results'][i]['geometry']['location']['lng']
+
+                    count += 1
+                
+            if 'next_page_token' in responsedict:
+                next_page_token = responsedict['next_page_token']
+                
+            else:
+                break
+        
+    topresultslist = []
+
+    for place in topresultsdict:
+
+        topresultslist.append(topresultsdict[place])
+
+    sortedresults = sorted(topresultslist, key=lambda d: d['rating'], reverse=True)
+
+    return render_template("results.html", destination=destination, distance=distance, startpoint=startpoint, response=topresultsdict, sortedresults=sortedresults, API_KEY=API_KEY)

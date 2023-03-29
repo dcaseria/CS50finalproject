@@ -12,12 +12,12 @@
         <script async src="https://maps.googleapis.com/maps/api/js?key={{ API_KEY }}&libraries=places&callback=initAutocomplete" async defer>
         </script>
 
-        <h1>Results for "{{ destination }}" within {{ distance }} miles of {{ startpoint }}</h1>
-        <p>Sorted Results: asdf asdf</p>
-        <div>
+        <h3 class="pb-3 border-bottom border-secondary">Results for "{{ destination }}" within {{ "%.1f" | format(distance | int / 1609) }} miles of {{ startpoint }}</h3>
+        <div class="col-md-8 offset-md-2">
+          <p>(click link to open directions in new tab)</p>
           {% for result in sortedresults %}
-            <h3>{{result.name}}</h3>
-            <p>Has a rating of {{result.rating}}</p>
+            <h3><a href="https://www.google.com/maps/dir/{{startpoint}}/{{result.lat}},{{result.lng}}" target="_blank">{{result.name}}</a></h3>
+            <p>Has a rating of {{result.rating}}/5 based on {{result.user_ratings_total}} reviews</p>
           {% endfor %}
         </div>
         </form>
