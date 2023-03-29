@@ -6,27 +6,21 @@
 
 {% block main %}
 
-        <script async src="https://maps.googleapis.com/maps/api/js?key={{ API_KEY }}&libraries=places&callback=initMap">
-        </script>
-
-        <script async src="https://maps.googleapis.com/maps/api/js?key={{ API_KEY }}&libraries=places&callback=initAutocomplete" async defer>
-        </script>
-
         <h1>Okay! Starting from {{ startpoint }}</h1>
         <p>Start lat: {{ start_lat }}, lng: {{ start_lng }}</p>
         <form action="/search" method="post" autocomplete="off">
             <p>What are you looking for?</p>
-            <input class="searchbox" id="placesearch" placeholder="Enter Destination Description (i.e. Grocery Store)" type="text" name="destination" autocomplete="off"/>
+            <input class="searchbox" id="placesearch" placeholder="Enter Destination Description (i.e. Grocery Store)" type="text" name="destination" autocomplete="off" required/>
               <fieldset>
                 <label for="dist-time">How far are you willing to go?</label>
-                <input type="number" min="0" max="100" step=".1" id="distance" name="distance" placeholder="Max travel distance" autocomplete="off"> (miles)
+                <input type="number" min="0" max="100" step=".1" id="distance" name="distance" placeholder="Max travel distance" autocomplete="off" required> (miles)
                 <input type="hidden" id="startpoint" name="startpoint" value="{{ startpoint }}">
                 <input type="hidden" id="start_lat" name="start_lat" value="{{ start_lat }}">
                 <input type="hidden" id="start_lng" name="start_lng" value="{{ start_lng }}">            
               </fieldset>
 
             <div class="mb-5">
-                <button type="submit" class="btn btn-primary btn-lg px-4">Let's Go!</a>
+                <button type="submit" class="btn btn-primary btn-lg px-4 mt-3">Let's Go!</a>
             </div>
         </form>
 

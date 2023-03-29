@@ -126,70 +126,53 @@ def results():
 
     count = 0
 
-    #Iterate through each result
-    for i in range(len(responsedict['results'])):
-#   for i in responsedict['results']:
+    #infinite loop that keeps getting the next set of 20 results from google until there is no next page token
+    while True:
 
-        #check to make sure business is listed as operational
-        if 'business_status' in responsedict['results'][i] and responsedict['results'][i]['business_status'] == 'OPERATIONAL':
-            
-            #create empty dictionary for the business
-            topresultsdict[count] = {}
+        #Iterate through each result
+        for i in range(len(responsedict['results'])):
+
+            #check to make sure business is listed as operational
+            if 'business_status' in responsedict['results'][i] and responsedict['results'][i]['business_status'] == 'OPERATIONAL':
                 
-            #copy over the keys/values we're interested in
-            topresultsdict[count]['place_id'] = responsedict['results'][i]['place_id']
-            topresultsdict[count]['name'] = responsedict['results'][i]['name']
-            topresultsdict[count]['rating'] = responsedict['results'][i]['rating']
-            topresultsdict[count]['user_ratings_total'] = responsedict['results'][i]['user_ratings_total']
-            topresultsdict[count]['business_status'] = responsedict['results'][i]['business_status']
-            topresultsdict[count]['lat'] = responsedict['results'][i]['geometry']['location']['lat']
-            topresultsdict[count]['lng'] = responsedict['results'][i]['geometry']['location']['lng']
+                #create empty dictionary for the business
+                topresultsdict[count] = {}
+                    
+                #copy over the keys/values we're interested in
+                topresultsdict[count]['place_id'] = responsedict['results'][i]['place_id']
+                topresultsdict[count]['name'] = responsedict['results'][i]['name']
+                topresultsdict[count]['rating'] = responsedict['results'][i]['rating']
+                topresultsdict[count]['user_ratings_total'] = responsedict['results'][i]['user_ratings_total']
+                topresultsdict[count]['business_status'] = responsedict['results'][i]['business_status']
+                topresultsdict[count]['lat'] = responsedict['results'][i]['geometry']['location']['lat']
+                topresultsdict[count]['lng'] = responsedict['results'][i]['geometry']['location']['lng']
 
-            #count only gets incremented if the business was operational and therefor copied into topresultsdict
-            count += 1
-    
-    #Use next_page_token to get results 21-40 and then 41-60.  Google maps documentation specifies a max of 60 results
+                #count only gets incremented if the business was operational and therefor copied into topresultsdict
+                count += 1
         
-    if 'next_page_token' in responsedict:
-        
-        next_page_token = responsedict['next_page_token']
-
-        for i in range(3):
+        #if next_page_token exists, then there is at least 1 more result that wasn't included in the first group of 20 results   
+        if 'next_page_token' in responsedict:
             
-            #pause to let the next_page_token register on google's end of things, before making the call for the next 20 results
+            next_page_token = responsedict['next_page_token']
+                
+            #THIS IS NECESSARY! Pause to let the next_page_token register on google's end of things, before making the call for the next 20 results.  I tried 1 second and it didn't work.  2 seconds seems to work every time.
             time.sleep(2)
                 
+            #overwrite responsedict with the next group of results
             responsedict = gmaps.places_nearby(page_token = next_page_token)
-#           #responsedict = json.loads(response)
-
-            for i in range(len(responsedict['results'])):
-                    
-                if 'business_status' in responsedict['results'][i] and responsedict['results'][i]['business_status'] == 'OPERATIONAL':
-                    
-                    topresultsdict[count] = {}
-                        
-                    topresultsdict[count]['place_id'] = responsedict['results'][i]['place_id']
-                    topresultsdict[count]['name'] = responsedict['results'][i]['name']
-                    topresultsdict[count]['rating'] = responsedict['results'][i]['rating']
-                    topresultsdict[count]['user_ratings_total'] = responsedict['results'][i]['user_ratings_total']
-                    topresultsdict[count]['business_status'] = responsedict['results'][i]['business_status']
-                    topresultsdict[count]['lat'] = responsedict['results'][i]['geometry']['location']['lat']
-                    topresultsdict[count]['lng'] = responsedict['results'][i]['geometry']['location']['lng']
-
-                    count += 1
                 
-            if 'next_page_token' in responsedict:
-                next_page_token = responsedict['next_page_token']
-                
-            else:
-                break
-        
+        #if there is no next_page_token in responsedict, then there are no more results to be gathered from google
+        else:
+            break
+
     topresultslist = []
 
+    #add each place from topresultdict to a list that can be sorted
     for place in topresultsdict:
 
         topresultslist.append(topresultsdict[place])
 
+    #sort by rating, descending order (highest to lowest rating)
     sortedresults = sorted(topresultslist, key=lambda d: d['rating'], reverse=True)
 
-    return render_template("results.html", destination=destination, distance=distance, startpoint=startpoint, response=topresultsdict, sortedresults=sortedresults, API_KEY=API_KEY)
+    return render_template("results.html", destination=destination, distance=distance, startpoint=startpoint, sortedresults=sortedresults)

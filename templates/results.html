@@ -6,20 +6,20 @@
 
 {% block main %}
 
-        <script async src="https://maps.googleapis.com/maps/api/js?key={{ API_KEY }}&libraries=places&callback=initMap">
-        </script>
-
-        <script async src="https://maps.googleapis.com/maps/api/js?key={{ API_KEY }}&libraries=places&callback=initAutocomplete" async defer>
-        </script>
-
-        <h3 class="pb-3 border-bottom border-secondary">Results for "{{ destination }}" within {{ "%.1f" | format(distance | int / 1609) }} miles of {{ startpoint }}</h3>
+        <h3 class="pb-3 border-bottom border-secondary">{{sortedresults|length}} results for "{{destination}}" within {{"%.1f" | format(distance | int / 1609)}} miles of {{startpoint}}</h3>
         <div class="col-md-8 offset-md-2">
+          <h4>Results ranked highest-lowest by average rating:</h4>
           <p>(click link to open directions in new tab)</p>
           {% for result in sortedresults %}
             <h3><a href="https://www.google.com/maps/dir/{{startpoint}}/{{result.lat}},{{result.lng}}" target="_blank">{{result.name}}</a></h3>
-            <p>Has a rating of {{result.rating}}/5 based on {{result.user_ratings_total}} reviews</p>
+            <p>Average rating of {{result.rating}}/5 based on {{result.user_ratings_total}} reviews</p>
           {% endfor %}
         </div>
         </form>
+        <div class="mb-5">
+          <a href="/location">
+            <button class="btn btn-primary btn-lg px-4">Search for something else!</button>
+          </a>
+        </div>
 
 {% endblock %}
